@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Todo — first.html</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;line-height:1.4}
+    body{max-width:680px;margin:36px auto;padding:18px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    h1{font-size:1.2rem;margin:0}
+    form{display:flex;gap:8px;margin:18px 0}
+    input[type="text"]{flex:1;padding:8px;border:1px solid #ccc;border-radius:6px}
+    button{padding:8px 10px;border-radius:6px;border:1px solid #0b5fff;background:#0b5fff;color:#fff;cursor:pointer}
+    button.ghost{background:#f3f4f7;color:#111;border:1px solid #ddd}
+    ul{list-style:none;padding:0;margin:8px 0}
+    li{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #eee;border-radius:8px;margin-bottom:8px}
+    li.completed .text{opacity:.5;text-decoration:line-through}
+    .text{flex:1}
+    .controls{display:flex;gap:8px}
+    small{color:#666}
+    .search{margin-top:6px}
+    footer{margin-top:18px;color:#666;font-size:.9rem;display:flex;justify-content:space-between;align-items:center}
+    @media (prefers-color-scheme:dark){
+      body{background:#0b1220;color:#dbeafe}
+      input,button,li{border-color:#233040}
+      button.ghost{background:transparent;color:#cbd5e1}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Todo (persistent)</h1>
+    <div>
+      <small id="count">0 items</small>
+    </div>
+  </header>
+
+  <form id="addForm" aria-label="Add todo">
+    <input id="input" type="text" placeholder="Add a todo and press Enter" autocomplete="off" />
+    <button type="submit">Add</button>
+    <button id="clearBtn" type="button" class="ghost" title="Clear all">Clear</button>
+  </form>
+
+  <div class="search">
+    <input id="filter" type="text" placeholder="Filter todos" />
+  </div>
+
+  <ul id="list" aria-live="polite"></ul>
+
+  <footer>
+    <div>
+      <small id="remaining">0 remaining</small>
+    </div>
+    <div>
+      <button id="export" class="ghost" title="Export JSON">Export</button>
+      <button id="import" class="ghost" title="Import JSON">Import</button>
+      <input id="fileInput" type="file" accept="application/json" style="display:none" />
+    </div>
+  </footer>
+
+  <script>
+    // Simple todo app persisted in localStorage
+    const STORAGE_KEY = 'first_html_todos_v1';
+    const listEl = document.getElementById('list');
+    const form = document.getElementById('addForm');
+    const input = document.getElementById('input');
+    const countEl = document.getElementById('count');
+    const remainingEl = document.getElementById('remaining');
+    const filterInput = document.getElementById('filter');
+    const clearBtn = document.getElementById('clearBtn');
+    const exportBtn = document.getElementById('export');
+    const importBtn = document.getElementById('import');
+    const fileInput = document.getElementById('fileInput');
+
+    let todos = [];
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+      render();
+    }
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        todos = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        todos = [];
+      }
+    }
+
+    function createTodo(text) {
+      return { id: cryptoRandomId(), text: text.trim(), done: false, createdAt: Date.now() };
+    }
+
+    function cryptoRandomId() {
+      // fallback if crypto not available
+      return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2, 10);
+    }
+
+    function render() {
+      const q = filterInput.value.trim().toLowerCase();
+      listEl.innerHTML = '';
+      const filtered = todos.filter(t => t.text.toLowerCase().includes(q));
+      for (const t of filtered) {
+        const li = document.createElement('li');
+        li.dataset.id = t.id;
+        if (t.done) li.classList.add('completed');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = t.done;
+        checkbox.title = 'Mark complete';
+
+        const span = document.createElement('div');
+        span.className = 'text';
+        span.textContent = t.text;
+        span.contentEditable = true;
+        span.setAttribute('spellcheck', 'false');
+        span.title = 'Edit (click and type)';
+
+        const ts = document.createElement('small');
+        ts.textContent = new Date(t.createdAt).toLocaleString();
+
+        const controls = document.createElement('div');
+        controls.className = 'controls';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'ghost';
+        deleteBtn.type = 'button';
+        deleteBtn.textContent = 'Delete';
+
+        controls.appendChild(deleteBtn);
+
+        li.appendChild(checkbox);
+        li.appendChild(span);
+        li.appendChild(ts);
+        li.appendChild(controls);
+
+        listEl.appendChild(li);
+      }
+
+      countEl.textContent = `${todos.length} items`;
+      remainingEl.textContent = `${todos.filter(t => !t.done).length} remaining`;
+    }
+
+    // add
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const val = input.value.trim();
+      if (!val) return;
+      todos.unshift(createTodo(val));
+      input.value = '';
+      save();
+    });
+
+    // delegate toggle & delete, handle edits
+    listEl.addEventListener('click', e => {
+      const li = e.target.closest('li');
+      if (!li) return;
+      const id = li.dataset.id;
+      if (e.target.tagName === 'INPUT' && e.target.type === 'checkbox') {
+        const t = todos.find(x => x.id === id);
+        if (!t) return;
+        t.done = e.target.checked;
+        save();
+      } else if (e.target.tagName === 'BUTTON') {
+        // delete
+        todos = todos.filter(x => x.id !== id);
+        save();
+      }
+    });
+
+    // save edits on blur or Enter
+    listEl.addEventListener('keydown', e => {
+      if (e.target.classList.contains('text') && e.key === 'Enter') {
+        e.preventDefault();
+        e.target.blur();
+      }
+    });
+
+    listEl.addEventListener('blur', e => {
+      if (!e.target.classList.contains('text')) return;
+      const li = e.target.closest('li');
+      const id = li && li.dataset.id;
+      const txt = e.target.textContent.trim();
+      if (!id) return;
+      const t = todos.find(x => x.id === id);
+      if (!t) return;
+      if (txt) {
+        t.text = txt;
+      } else {
+        // if emptied, remove
+        todos = todos.filter(x => x.id !== id);
+      }
+      save();
+    }, true);
+
+    // filter
+    filterInput.addEventListener('input', () => render());
+
+    // clear all
+    clearBtn.addEventListener('click', () => {
+      if (!confirm('Clear all todos?')) return;
+      todos = [];
+      save();
+    });
+
+    // export
+    exportBtn.addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(todos, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'todos.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // import
+    importBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) throw new Error('Invalid format');
+        // simple merge: append imported items (avoid duplicate ids)
+        const existingIds = new Set(todos.map(t => t.id));
+        for (const it of parsed) {
+          if (!it.id || existingIds.has(it.id)) it.id = cryptoRandomId();
+          todos.push({ id: it.id, text: String(it.text || ''), done: !!it.done, createdAt: it.createdAt || Date.now() });
+        }
+        save();
+      } catch (err) {
+        alert('Failed to import: ' + err.message);
+      } finally {
+        fileInput.value = '';
+      }
+    });
+
+    // initialize
+    load();
+    render();
+  </script>
+</body>
+</html>
