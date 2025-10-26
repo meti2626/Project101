@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">  
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Object Methods</title>
+  </head>
+
+<body>
+
+  <script>
+//       emp ={
+//         id:102,
+//         name:"joen do"
+// ,salary:40000}
+
+// document.write(emp.id + "" +emp.name + "" + emp.salary);
+
+// var emp = new Object();
+//  emp.id = 101;
+//  emp.name ="Ravi Malik";
+//  emp.salary = 50000;
+// document.write(emp.id+" "+emp.name+" "
+//  +emp.salary)
+
+
+
+function emp(id, nme,salary)
+{
+  this.id = id;
+  this.name = nme;
+  this.salary = salary;
+
+
+this.changeSalary = changeSalary;
+function changeSalary(otherSalary)
+  {
+    this.salary=otherSalary;
+  }
+}
+var emp1 = new emp(101,"Ravi Malik",50000);
+
+document.write(emp1.id+" "+ emp1.name +" "+emp1.salary);  
+
+emp1.changeSalary(5080000);
+
+
+document.write("<br>"+emp1.id+" "+ emp1.name +" "+emp1.salary); 
+  </script>
+</body>
+
+</html>
