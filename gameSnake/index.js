@@ -8,7 +8,7 @@ const resetBtn = document.querySelector("#resetBtn");
 
 const gameWidth = gameBoard.width;
 const gameHeight = gameBoard.height;
-const boardBackground = "white";
+const boardBackground = "pink";
 const snakeColor = "lightgreen";
 const snakeBorder = "darkgreen";
 const foodColor = "red";
@@ -46,6 +46,7 @@ gameStart();
 function gameStart(){
      running = true;
      scoreText.textContent = score ;
+   
      createFood();
      drawFood();
      nextTick();
@@ -59,11 +60,13 @@ function nextTick(){
              drawFood();
              moveSnake(); 
              drawSnake();
+             
              checkGameOver();
              nextTick();
         } , 75)
       }
       else{
+
          displayGameOver();
       }
 
