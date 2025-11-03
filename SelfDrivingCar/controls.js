@@ -1,3 +1,9 @@
+//To remember which keys are being pressed,
+
+// And to let your car use that info (like: is the driver pressing ↑ or ↓?
+
+//that remembers, acts, and belongs to each car individually.
+
 
 class Controls{
     
@@ -29,7 +35,7 @@ class Controls{
                       this.reverse= true;
                  
                }
-                  console.table(this);
+                  
            }   
 
 
@@ -50,7 +56,7 @@ class Controls{
                       this.reverse= false;
                       break;
                }
-               console.table(this);
+             
            }  
 
 
